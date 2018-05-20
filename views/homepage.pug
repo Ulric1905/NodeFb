@@ -20,12 +20,13 @@ html
                     article
                             h1 #{user.email}
 
-                            a(href="/post/" + post.id)
-                                h1 #{post.desc}
+                            h1 #{post.desc}
 
                             p #{post.nblike} like, #{post.Nbcomment} comment(s), #{post.share} share
                             form(method="POST" action="/likePost/" + post.id )
                                 <input class="btn btn-info btn-lg" type="submit" value="like">
+                            form(method="POST" action="/post/" + post.id )
+                                <input class="btn btn-info btn-lg" type="submit" value="comment">
 
 
 

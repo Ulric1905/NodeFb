@@ -182,6 +182,16 @@ app.post('/likePost/:postid', (req, res) => {
     res.redirect('/');
 })
 })
+app.post('/likePostComment/:commentid', (req, res) => {
+    Comment
+        .findOne({ where: { id:req.params.commentid }})
+    .then((comment) => {
+        var NbLike = comment.NbLike;
+        console.log(comment.desc);
+        comment.increment('NbLike');
+    res.redirect('/post/' + comment.idPost);
+})
+})
 app.post('/Postcommentup/:commentid', (req, res) => {
     Post.findOne({ where: { id:req.params.commentid }})
     .then((Post) => {
