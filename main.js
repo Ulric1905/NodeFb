@@ -6,7 +6,7 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const Sequelize = require('sequelize');
 const app = express();
-
+const Op = Sequelize.Op;
 app.use((express.static('public')))
 // This secret will be used to sign and encrypt cookies
 const COOKIE_SECRET = 'cookie secret';
@@ -89,9 +89,10 @@ const db = new Sequelize('blog', 'root', '', {
     host: 'localhost',
     dialect: 'mysql'
 });
-const IsFriend = db.define('user', {
+const Relation = db.define('relation', {
     User1: { type: Sequelize.TEXT },
-    User2: { type: Sequelize.TEXT }
+    User2: { type: Sequelize.TEXT },
+    Status: { type: Sequelize.TINYINT},
 });
 
 const Comment = db.define('comment', {
@@ -116,13 +117,63 @@ const User = db.define('user', {
     password: { type: Sequelize.TEXT }
 });
 
+app.get('/addFriend', (req, res) => {
+    User
+        .findAll({ where: {
+            [Op.ne]: [{email:req.body.username }]
+            }})
+        .then((users) => {
+            res.render('addFriend', { users});
+        });
+});
+app.get('/invitation', (req, res) => {
+    Relation
+        .findAll({ where: { User2:req.user.email, Status:0 }})
+        .then((relations) => {
+            res.render('invitation', {relations});
+        });
+});
+app.post('/accppted/:relationid', (req, res) => {
+    Relation
+        .findOne({ where: { id:req.params.relationid }})
+        .then((relation) => {
 
+            var Status = relation.Status;
+            console.log(relation.Status);
+            relation.increment('Status');
+            res.redirect('/invitation');
+});
+});
+
+
+app.post('/addFriend', (req, res) => {
+    User
+        .findOne({ where: { email:req.body.username }})
+        .then((users) => {
+            Relation
+            .sync()
+                .then(() => Relation.create({
+                        User1: req.user.email,
+                        User2: users.email,
+                        Status: 0,
+                    }),
+                    console.log(req.user.email),
+                    res.redirect('/addFriend'))
+
+        });
+});
 
 app.get('/', (req, res) => {
     Post
     .findAll()
     .then((posts) => {
-    res.render('homepage', { posts, user:req.user });
+        Relation
+            .findAll({ where: {
+                [Op.or]: [{User1:req.user.email}, {User2:req.user.email}]
+                 , Status:1 }})
+            .then((relations) => {
+                res.render('homepage', {posts, user: req.user, relations});
+            })
 });
 });
 app.get('/post/:postid', (req, res) => {

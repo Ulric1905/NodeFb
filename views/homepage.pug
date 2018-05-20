@@ -15,11 +15,26 @@ html
                     button(type="submit") post
 
 
+            div(class="myInfo")
+                h1 #{user.email}
+                a(href="/addFriend")
+                    h3 Add friend
+                a(href="/invitation")
+                    h3 Invitation
+
+                for relation in relations
+                    h3 #{relation.User1} and #{relation.User2} are friend
+
+
+
+
+
+
         div(class="listGame")
             for post in posts
                     article
-                            h1 #{user.email}
 
+                            h1 #{post.user}
                             h1 #{post.desc}
 
                             p #{post.nblike} like, #{post.Nbcomment} comment(s), #{post.share} share
