@@ -12,7 +12,7 @@ app.use((express.static('public')))
 const COOKIE_SECRET = 'cookie secret';
 
 passport.use(new LocalStrategy((email, password, callback)=> {
-    Log
+    User
     .findOne({ where: { email, password }})
     .then((user)=> {
     if (user){
@@ -32,7 +32,7 @@ passport.serializeUser((user, cb) => {
 });
 
 passport.deserializeUser((email, callback) => {
-    Log
+    User
     .findOne({ where: { email }})
     .then((user)=> {
     if (user){
@@ -89,93 +89,114 @@ const db = new Sequelize('blog', 'root', '', {
     host: 'localhost',
     dialect: 'mysql'
 });
-
+const IsFriend = db.define('user', {
+    User1: { type: Sequelize.TEXT },
+    User2: { type: Sequelize.TEXT }
+});
 
 const Comment = db.define('comment', {
-    idArticle: { type: Sequelize.TINYINT },
+    idPost: { type: Sequelize.TINYINT },
     desc: { type: Sequelize.TEXT },
-    userName: { type: Sequelize.TEXT }
+    userName: { type: Sequelize.TEXT },
+    NbLike: { type: Sequelize.TINYINT },
 
 });
 
-const Game = db.define('game', {
-    title: { type: Sequelize.STRING },
+const Post = db.define('post', {
+    user: { type: Sequelize.STRING },
     desc: { type: Sequelize.TEXT },
-    ratio: { type: Sequelize.TINYINT }
+    nblike: { type: Sequelize.TINYINT },
+    Nbcomment: { type: Sequelize.TINYINT },
+    share: { type: Sequelize.TINYINT },
 
 });
 
-const Log = db.define('log', {
+const User = db.define('user', {
     email: { type: Sequelize.TEXT },
     password: { type: Sequelize.TEXT }
 });
+
+
+
 app.get('/', (req, res) => {
-    Game
-    .findAll( {order: [['ratio', 'DESC']] })
-    .then((games) => {
-    res.render('homepage', { games, user:req.user });
+    Post
+    .findAll()
+    .then((posts) => {
+    res.render('homepage', { posts, user:req.user });
 });
 });
-app.get('/article/:articleid', (req, res) => {
-    Game
-    .findOne({ where: { id:req.params.articleid }})
-    .then(( game) => {
+app.get('/post/:postid', (req, res) => {
+    Post
+    .findOne({ where: { id:req.params.postid }})
+    .then(( post) => {
     Comment
-    .findAll({ where: { idArticle:req.params.articleid }})
+    .findAll({ where: { idPost:req.params.postid }})
     .then((comments) => {
-    res.render('article',{game, comments} );
+    res.render('post',{post, comments} );
     })
 
 });
 });
 
 app.post('/', (req, res) => {
-    const { title, desc } = req.body;
-Game
+
+Post
     .sync()
-    .then(() => Game.create({ title, desc, ratio:0}))
+    .then(() => Post.create({ user:req.user.email, desc: req.body.desc, nblike:0, comment:0, share:0}))
 .then(() => res.redirect('/'));
 });
 
-app.post('/article/:articleid', (req, res) => {
-    const { desc } = req.body;
-    Comment
-        .sync()
-        .then(() => Comment.create({idArticle:req.params.articleid, desc, userName:req.user.email})
-        )
-        .then(res.redirect('/article/' + req.params.articleid),
-        )
-});
+app.post('/post/:postid', (req, res) => {
+        const {desc} = req.body;
+        Comment
+            .sync()
+            .then(() => Comment.create({
+                    idPost: req.params.postid,
+                    desc: req.body.desc,
+                    userName: req.user.email,
+                    NbLike: 0
+                })
+            )
+            .then((comment) => {
+                Post
+                    .findOne({where: {id: req.params.postid}})
+                    .then((post) => {
+                        console.log(post.desc);
+                        post.increment('Nbcomment');
+                        res.redirect('/post/' + req.params.postid)
+                    })
+            })
+    });
 
 
 
 app.get('/inscription', (req, res) => {
     res.render('inscription');
 });
-app.post('/rankup/:gameid', (req, res) => {
-    Game.findOne({ where: { id:req.params.gameid }})
-    .then((games) => {
-    var ratio = games.ratio;
-games.update(
-    {ratio: db.literal('ratio + 1'),})
-res.redirect('/');
+app.post('/likePost/:postid', (req, res) => {
+    Post
+        .findOne({ where: { id:req.params.postid }})
+    .then((posts) => {
+        var nblike = posts.nblike;
+        posts.increment('nblike');
+    res.redirect('/');
 })
 })
-app.post('/rankdown/:gameid', (req, res) => {
-    Game.findOne({ where: { id:req.params.gameid }})
-    .then((games) => {
-    var ratio = games.ratio;
-games.update(
-    {ratio: db.literal('ratio - 1'),})
+app.post('/Postcommentup/:commentid', (req, res) => {
+    Post.findOne({ where: { id:req.params.commentid }})
+    .then((Post) => {
+
+        Post.update(
+    {comment: db.literal('comment + 1'),})
 res.redirect('/');
 
 })
 })
 
 app.post('/inscription', (req, res) => {
-    Log.create({email: req.body.username, password: req.body.password})
-    .then((log) => {
-    req.login(log, ()=>{
+    User.create({email: req.body.username, password: req.body.password})
+    .then((user) => {
+    req.login(user, ()=>{
     res.redirect('/')
 })
 })
