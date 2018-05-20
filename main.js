@@ -119,9 +119,7 @@ const User = db.define('user', {
 
 app.get('/addFriend', (req, res) => {
     User
-        .findAll({ where: {
-            [Op.ne]: [{email:req.body.username }]
-            }})
+        .findAll()
         .then((users) => {
             res.render('addFriend', { users});
         });
